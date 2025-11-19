@@ -65,7 +65,7 @@ async function analyzeSituation(situation, followUpContext = null) {
                   content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning. Be fair and accurate.`
                 }
               ],
-              max_tokens: 300,
+              max_tokens: 200,
               temperature: 0.7
       });
       
