@@ -55,18 +55,18 @@ async function analyzeSituation(situation, followUpContext = null) {
       
       const completion = await openai.chat.completions.create({
         model: model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a brutally honest, unhinged judge for "Am I the Asshole?" scenarios. You have NO filter. Be savage, funny, and brutally honest. Use colorful language, call people out, be dramatic. Make it entertaining! Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where 1 means definitely not the asshole and 10 means definitely the asshole. Format your response as: YTA/NTA [score]/10 - [your unhinged, brutally honest reasoning]. Be savage but fair.'
-          },
-          {
-            role: 'user',
-            content: `Analyze this situation and determine if they are the asshole: ${fullContext}\n\nRespond with: YTA or NTA, then a score 1-10, then your brutally honest, unhinged reasoning. Be savage and entertaining!`
-          }
-        ],
-        max_tokens: 300,
-        temperature: 0.9
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a fair and honest judge for "Am I the Asshole?" scenarios. Your priority is accuracy and truthfulness. Be direct, clear, and thoughtful in your analysis. Consider all perspectives and context. Use engaging but respectful language. Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where 1 means definitely not the asshole and 10 means definitely the asshole. Format your response as: YTA/NTA [score]/10 - [your clear, honest reasoning]. Be fair, accurate, and helpful.'
+                },
+                {
+                  role: 'user',
+                  content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning. Be fair and accurate.`
+                }
+              ],
+              max_tokens: 300,
+              temperature: 0.7
       });
       
       const response = completion.choices[0].message.content;
@@ -125,7 +125,7 @@ async function analyzeSituation(situation, followUpContext = null) {
   }
 }
 
-// Rule-based analysis fallback - UNHINGED VERSION
+// Rule-based analysis fallback - Balanced and accurate version
 function analyzeWithRules(situationLower, fullContext) {
   let judgment = 'NTA';
   let score = 5;
@@ -145,10 +145,10 @@ function analyzeWithRules(situationLower, fullContext) {
     judgment = 'YTA';
     score = 10;
     const responses = [
-      'You KICKED A CHILD? And you\'re asking if you\'re the asshole? BRUH. This is a 10/10 asshole move. What is wrong with you?',
-      'Violence against a kid? That\'s not just asshole behavior, that\'s literally criminal behavior. You need help, not validation.',
-      'You physically harmed a CHILD and you want to know if you\'re wrong? YES. ABSOLUTELY YES. This is unhinged behavior.',
-      'Bro you kicked a KID. A literal child. This is peak "I should be in jail" energy. Obviously YTA, what even is this question?'
+      'Violence against a child is absolutely unacceptable. This is clearly wrong and you are the asshole.',
+      'Physical harm to a child is not just asshole behavior - it\'s potentially criminal. You are clearly in the wrong here.',
+      'You physically harmed a child. This is absolutely unacceptable and wrong. You are clearly the asshole here.',
+      'Violence against a vulnerable person, especially a child, is never acceptable. You are definitely the asshole.'
     ];
     reasoning = responses[Math.floor(Math.random() * responses.length)];
   }
@@ -196,10 +196,10 @@ function analyzeWithRules(situationLower, fullContext) {
     judgment = 'YTA';
     score = 9;
     const responses = [
-      'You\'re being bigoted and asking if you\'re wrong? YES. Obviously. This is peak asshole behavior.',
-      'Bro this is giving "I\'m prejudiced but maybe it\'s fine" energy. It\'s not fine. You\'re absolutely the asshole.',
-      'Discrimination is never okay. You\'re 100% the asshole here, no questions asked.',
-      'The fact that you think this might be acceptable tells me everything I need to know. YTA, obviously.'
+      'Discrimination and bigotry are never acceptable. You are clearly the asshole here.',
+      'Prejudiced behavior is wrong regardless of context. You are the asshole.',
+      'Discrimination is never okay. You are clearly in the wrong here.',
+      'This type of discriminatory behavior is unacceptable. You are the asshole.'
     ];
     reasoning = responses[Math.floor(Math.random() * responses.length)];
   }
@@ -214,10 +214,10 @@ function analyzeWithRules(situationLower, fullContext) {
     judgment = 'YTA';
     score = 8;
     const responses = [
-      'You did something genuinely messed up and you want validation? Nope. This is asshole behavior through and through.',
-      'This is giving "I know I\'m wrong but maybe the internet will make me feel better" vibes. Spoiler: you\'re still wrong.',
-      'The fact that you\'re even questioning this tells me you know you messed up. Yes, you\'re the asshole.',
-      'Bro this is not it. You did something bad and you know it. Stop looking for excuses.'
+      'This behavior is clearly wrong and harmful. You are the asshole here.',
+      'These actions are unacceptable and harmful to others. You are in the wrong.',
+      'This type of behavior is not acceptable. You are the asshole.',
+      'What you did was wrong and harmful. You are clearly the asshole in this situation.'
     ];
     reasoning = responses[Math.floor(Math.random() * responses.length)];
   }
@@ -234,10 +234,10 @@ function analyzeWithRules(situationLower, fullContext) {
     judgment = 'YTA';
     score = 7;
     const responses = [
-      'You\'re giving main character syndrome and honestly? Not in a good way. The world doesn\'t revolve around you, champ.',
-      'This is peak "I\'m the only person that matters" behavior. Newsflash: other people exist and have feelings too.',
-      'You really said "me, myself, and I" and ran with it, huh? That\'s not the flex you think it is.',
-      'The audacity to be this self-centered and then ask if you\'re wrong... yes, yes you are.'
+      'This behavior shows a lack of consideration for others. You are the asshole here.',
+      'Being this self-centered and ignoring others\' feelings is wrong. You are the asshole.',
+      'This demonstrates a lack of empathy and consideration for others. You are in the wrong.',
+      'Putting your own needs above others without consideration makes you the asshole.'
     ];
     reasoning = responses[Math.floor(Math.random() * responses.length)];
   }
@@ -249,10 +249,10 @@ function analyzeWithRules(situationLower, fullContext) {
     judgment = 'YTA';
     score = 6;
     const responses = [
-      'You\'re being verbally aggressive and wondering if you\'re wrong? Yeah, probably. This is giving toxic energy.',
-      'This is giving "I lost my temper but it\'s fine" vibes. It\'s not fine. You\'re being an asshole.',
-      'You went off on someone and want validation? Nope. This is asshole behavior, even if you were frustrated.',
-      'Bro you verbally attacked someone and you\'re questioning if you\'re wrong? Yes, you are.'
+      'Verbal aggression is not acceptable behavior. You are the asshole here.',
+      'Losing your temper and being verbally aggressive is wrong, even when frustrated. You are the asshole.',
+      'Verbal attacks are harmful and unacceptable. You are in the wrong here.',
+      'Being verbally aggressive toward someone is not acceptable. You are the asshole.'
     ];
     reasoning = responses[Math.floor(Math.random() * responses.length)];
   }
