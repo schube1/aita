@@ -58,11 +58,11 @@ async function analyzeSituation(situation, followUpContext = null) {
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a fair and honest judge for "Am I the Asshole?" scenarios. Your priority is accuracy and truthfulness. Be direct, clear, and thoughtful in your analysis. Consider all perspectives and context. Use engaging but respectful language. Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where 1 means definitely not the asshole and 10 means definitely the asshole. Format your response as: YTA/NTA [score]/10 - [your clear, honest reasoning]. IMPORTANT: Keep your reasoning concise - between 40-90 words maximum. Be fair, accurate, and helpful.'
+                  content: 'You are a fair and honest judge for "Am I the Asshole?" scenarios. Your priority is accuracy and truthfulness. Be direct, clear, and thoughtful in your analysis. Consider all perspectives and context. Use engaging but respectful language. Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where: For NTA (not the asshole): 1-3 = clearly not the asshole, 4-5 = mostly not the asshole. For YTA (you are the asshole): 6-7 = somewhat the asshole, 8-9 = clearly the asshole, 10 = extremely the asshole. IMPORTANT: If someone is clearly NTA (like helping others, standing up for themselves), use scores 1-3. If someone is clearly YTA (like harming others, being selfish), use scores 8-10. Format your response as: YTA/NTA [score]/10 - [your clear, honest reasoning]. Keep your reasoning concise - between 40-90 words maximum. Be fair, accurate, and helpful.'
                 },
                 {
                   role: 'user',
-                  content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning in 40-90 words. Be fair, accurate, and concise.`
+                  content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning in 40-90 words.\n\nSCORING GUIDE:\n- If NTA (not the asshole): Use scores 1-3 for clearly good actions, 4-5 for mostly reasonable actions\n- If YTA (you are the asshole): Use scores 6-7 for minor issues, 8-9 for serious problems, 10 for extreme cases\n\nExamples:\n- Helping someone in need = NTA 1-2/10\n- Standing up for yourself = NTA 1-3/10\n- Harming others = YTA 8-10/10\n- Being selfish = YTA 6-8/10\n\nBe fair, accurate, and concise.`
                 }
               ],
               max_tokens: 120,
@@ -90,8 +90,18 @@ async function analyzeSituation(situation, followUpContext = null) {
         if (score < 1) score = 1;
         if (score > 10) score = 10;
       } else {
-        // Default score based on judgment
-        score = judgment === 'YTA' ? 7 : 3;
+        // Default score based on judgment - use appropriate ranges
+        score = judgment === 'YTA' ? 8 : 2; // YTA defaults to 8 (clearly asshole), NTA defaults to 2 (clearly not asshole)
+      }
+      
+      // Validate score matches judgment
+      // NTA should be 1-5, YTA should be 6-10
+      if (judgment === 'NTA' && score > 5) {
+        console.log(`⚠️ Score ${score} doesn't match NTA judgment, adjusting to 3`);
+        score = 3; // Default to middle of NTA range
+      } else if (judgment === 'YTA' && score < 6) {
+        console.log(`⚠️ Score ${score} doesn't match YTA judgment, adjusting to 8`);
+        score = 8; // Default to middle-high of YTA range
       }
       
       // Extract reasoning (everything after the score or judgment)
