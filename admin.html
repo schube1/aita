@@ -516,22 +516,37 @@
                     <div class="stat-card">
                         <div class="stat-label">Total Users</div>
                         <div class="stat-value">${data.totalUsers}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${data.adminCount || 0} admin(s)</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total Submissions</div>
                         <div class="stat-value">${data.totalSubmissions}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${data.recentSubmissions || 0} this week</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Average Score</div>
                         <div class="stat-value">${data.averageScore.toFixed(1)}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">out of 10</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">YTA Count</div>
-                        <div class="stat-value">${data.ytaCount}</div>
+                        <div class="stat-value" style="color: #e74c3c;">${data.ytaCount}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${data.totalSubmissions > 0 ? ((data.ytaCount / data.totalSubmissions) * 100).toFixed(1) : 0}%</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">NTA Count</div>
-                        <div class="stat-value">${data.ntaCount}</div>
+                        <div class="stat-value" style="color: #4a90e2;">${data.ntaCount}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${data.totalSubmissions > 0 ? ((data.ntaCount / data.totalSubmissions) * 100).toFixed(1) : 0}%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Public Submissions</div>
+                        <div class="stat-value">${data.publicSubmissions || 0}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">${data.anonymousSubmissions || 0} anonymous</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Private Submissions</div>
+                        <div class="stat-value">${data.privateSubmissions || 0}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">user-only</div>
                     </div>
                 `;
                 
@@ -549,7 +564,10 @@
                             <tbody>
                                 ${data.submissionsByUser.map(user => `
                                     <tr>
-                                        <td>${escapeHtml(user.username || 'Anonymous')}</td>
+                                        <td>
+                                            <div style="font-weight: 600;">${escapeHtml(user.username || 'Anonymous')}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(user.email || '')}</div>
+                                        </td>
                                         <td>${user.submission_count || 0}</td>
                                         <td>${user.avg_score ? parseFloat(user.avg_score).toFixed(1) : 'N/A'}</td>
                                     </tr>
@@ -583,7 +601,13 @@
                 const data = await response.json();
                 
                 if (data.users && data.users.length > 0) {
-                    document.getElementById('usersContent').innerHTML = data.users.map(user => `
+                    document.getElementById('usersContent').innerHTML = `
+                        <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; border-left: 4px solid var(--accent-color);">
+                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">
+                                <strong>Note:</strong> Passwords are securely hashed and cannot be viewed. This is a security best practice.
+                            </p>
+                        </div>
+                        ${data.users.map(user => `
                         <div class="data-card">
                             <div class="data-card-header">
                                 <div>
@@ -595,12 +619,47 @@
                                 </div>
                             </div>
                             <div class="data-card-content">
-                                <p><strong>Email:</strong> ${escapeHtml(user.email)}</p>
-                                <p><strong>Joined:</strong> ${formatDate(user.created_at)}</p>
-                                <p><strong>User ID:</strong> ${user.id}</p>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 12px;">
+                                    <div>
+                                        <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">Email</p>
+                                        <p style="margin: 0; font-weight: 600;">${escapeHtml(user.email)}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">User ID</p>
+                                        <p style="margin: 0; font-weight: 600;">#${user.id}</p>
+                                    </div>
+                                    <div>
+                                        <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">Joined</p>
+                                        <p style="margin: 0; font-weight: 600;">${formatDate(user.created_at)}</p>
+                                    </div>
+                                    ${user.last_submission_date ? `
+                                    <div>
+                                        <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">Last Submission</p>
+                                        <p style="margin: 0; font-weight: 600;">${formatDate(user.last_submission_date)}</p>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                ${user.submission_count > 0 ? `
+                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                                    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                                        <div>
+                                            <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">YTA Count</p>
+                                            <p style="margin: 0; font-weight: 700; color: #e74c3c;">${user.yta_count || 0}</p>
+                                        </div>
+                                        <div>
+                                            <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">NTA Count</p>
+                                            <p style="margin: 0; font-weight: 700; color: #4a90e2;">${user.nta_count || 0}</p>
+                                        </div>
+                                        <div>
+                                            <p style="margin: 0 0 4px 0; font-size: 0.85rem; color: var(--text-secondary);">Avg Score</p>
+                                            <p style="margin: 0; font-weight: 700;">${user.avg_score ? parseFloat(user.avg_score).toFixed(1) : 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                ` : '<p style="margin-top: 12px; color: var(--text-secondary); font-size: 0.9rem;">No submissions yet</p>'}
                             </div>
                         </div>
-                    `).join('');
+                    `).join('')}`;
                 } else {
                     document.getElementById('usersContent').innerHTML = '<p style="color: var(--text-secondary);">No users found.</p>';
                 }

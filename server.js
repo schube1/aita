@@ -801,7 +801,11 @@ app.get('/api/admin/users', requireAdmin, (req, res) => {
         email, 
         is_admin,
         created_at,
-        (SELECT COUNT(*) FROM submissions WHERE user_id = users.id) as submission_count
+        (SELECT COUNT(*) FROM submissions WHERE user_id = users.id) as submission_count,
+        (SELECT COUNT(*) FROM submissions WHERE user_id = users.id AND judgment = 'YTA') as yta_count,
+        (SELECT COUNT(*) FROM submissions WHERE user_id = users.id AND judgment = 'NTA') as nta_count,
+        (SELECT AVG(score) FROM submissions WHERE user_id = users.id AND score IS NOT NULL) as avg_score,
+        (SELECT MAX(created_at) FROM submissions WHERE user_id = users.id) as last_submission_date
       FROM users 
       ORDER BY created_at DESC
     `);
@@ -823,14 +827,27 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
     const ytaCount = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE judgment = 'YTA'").get();
     const ntaCount = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE judgment = 'NTA'").get();
     
+    const publicSubmissions = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE is_public = 1").get();
+    const privateSubmissions = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE is_public = 0").get();
+    const anonymousSubmissions = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE is_anonymous = 1").get();
+    
+    const recentSubmissions = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM submissions 
+      WHERE created_at > datetime('now', '-7 days')
+    `).get();
+    
+    const adminCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE is_admin = 1").get();
+    
     const submissionsByUser = db.prepare(`
       SELECT 
         u.username,
+        u.email,
         COUNT(s.id) as submission_count,
         AVG(s.score) as avg_score
       FROM users u
       LEFT JOIN submissions s ON u.id = s.user_id
-      GROUP BY u.id, u.username
+      GROUP BY u.id, u.username, u.email
       ORDER BY submission_count DESC
     `).all();
     
@@ -840,6 +857,11 @@ app.get('/api/admin/stats', requireAdmin, (req, res) => {
       averageScore: avgScore.avg ? parseFloat(avgScore.avg.toFixed(2)) : 0,
       ytaCount: ytaCount.count,
       ntaCount: ntaCount.count,
+      publicSubmissions: publicSubmissions.count,
+      privateSubmissions: privateSubmissions.count,
+      anonymousSubmissions: anonymousSubmissions.count,
+      recentSubmissions: recentSubmissions.count,
+      adminCount: adminCount.count,
       submissionsByUser
     });
   } catch (error) {
