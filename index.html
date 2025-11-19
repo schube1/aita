@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Am I the Asshole?</title>
     <link rel="icon" type="image/png" href="/spiral.png">
     <style>
@@ -915,6 +917,214 @@
 
             .button-group {
                 flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Mobile-first improvements */
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 10px 5px;
+                z-index: 1000;
+                border-top: 1px solid var(--border-color);
+                border-right: none;
+            }
+
+            .sidebar-item {
+                width: 50px;
+                height: 50px;
+                margin: 0;
+                border-radius: 12px;
+            }
+
+            .main-content,
+            .submissions-view {
+                margin-left: 0;
+                margin-bottom: 80px;
+                padding: 20px 15px;
+            }
+
+            .container {
+                padding: 20px;
+                border-radius: 12px;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+                margin-bottom: 20px;
+            }
+
+            .view-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .view-header p {
+                font-size: 0.9rem;
+            }
+
+            textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 12px;
+            }
+
+            .submit-btn, .clear-btn {
+                width: 100%;
+                padding: 14px;
+                font-size: 1rem;
+            }
+
+            .button-group {
+                gap: 10px;
+            }
+
+            .user-info {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                left: auto;
+                padding: 8px 12px;
+                font-size: 0.85rem;
+                flex-direction: row;
+                gap: 8px;
+            }
+
+            .user-info .logout-btn {
+                padding: 4px 8px;
+                font-size: 0.8rem;
+            }
+
+            .submission-card {
+                margin-bottom: 16px;
+                border-radius: 8px;
+            }
+
+            .submission-card-header {
+                padding: 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .submission-header-left {
+                flex: 1 1 100%;
+            }
+
+            .rating-badge-large {
+                width: 100%;
+                align-items: flex-start;
+                margin-top: 8px;
+            }
+
+            .rating-number {
+                font-size: 2rem;
+            }
+
+            .rating-verdict {
+                font-size: 0.75rem;
+            }
+
+            .submission-card-body {
+                padding: 12px;
+            }
+
+            .submission-card-text {
+                font-size: 0.9rem;
+                line-height: 1.6;
+            }
+
+            .submission-footer {
+                padding: 10px 12px;
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-start;
+            }
+
+            .score-visual {
+                width: 100%;
+            }
+
+            .score-dots {
+                flex-wrap: wrap;
+            }
+
+            .auth-container {
+                padding: 24px 20px;
+                max-width: 95%;
+                margin: 20px;
+            }
+
+            .auth-tabs {
+                gap: 8px;
+            }
+
+            .auth-tab {
+                padding: 10px;
+                font-size: 0.9rem;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+            .form-group label {
+                font-size: 0.9rem;
+                margin-bottom: 6px;
+            }
+
+            .form-group input {
+                padding: 12px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            .view-header {
+                margin-bottom: 20px;
+            }
+
+            .view-header > div {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .view-header button {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .submission-reasoning {
+                padding: 12px;
+                font-size: 0.85rem;
+            }
+
+            .follow-up-context-display {
+                padding: 12px;
+            }
+
+            .judgment-section {
+                padding: 20px;
+            }
+
+            .judgment-verdict {
+                font-size: 2rem;
+            }
+
+            .judgment-score {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .score-value {
+                font-size: 2.5rem;
+            }
+
+            .judgment-reasoning {
+                font-size: 0.95rem;
+                padding: 16px;
             }
         }
     </style>
