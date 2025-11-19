@@ -293,14 +293,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static('.'));
 
+// Trust proxy (needed for Railway and other hosting platforms)
+app.set('trust proxy', 1);
+
 // Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
+  proxy: true, // Trust the reverse proxy (Railway)
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === 'production', // Will be true if Railway sets HTTPS headers
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' needed for cross-site in production
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
