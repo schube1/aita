@@ -408,14 +408,21 @@ function requireAuth(req, res, next) {
 // Admin middleware - requires authentication AND admin status
 function requireAdmin(req, res, next) {
   if (!req.session || !req.session.userId) {
+    console.log('Admin check failed: No session or userId');
     return res.status(401).json({ error: 'Authentication required' });
   }
   
-  const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
-  if (!user || !user.is_admin) {
+  const user = db.prepare('SELECT id, username, is_admin FROM users WHERE id = ?').get(req.session.userId);
+  console.log('Admin check for user:', { userId: req.session.userId, user: user, is_admin: user?.is_admin, type: typeof user?.is_admin });
+  
+  // SQLite stores integers, so check for truthy value (1 = true, 0 = false)
+  // Also handle case where is_admin might be null or undefined
+  if (!user || (user.is_admin !== 1 && user.is_admin !== true)) {
+    console.log('Admin check failed: User is not admin');
     return res.status(403).json({ error: 'Admin access required' });
   }
   
+  console.log('Admin check passed');
   next();
 }
 
@@ -821,8 +828,19 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Debug endpoint to check admin status
+app.get('/api/debug/admin-status', requireAuth, (req, res) => {
+  const user = db.prepare('SELECT id, username, is_admin FROM users WHERE id = ?').get(req.session.userId);
+  res.json({
+    sessionUserId: req.session.userId,
+    user: user,
+    isAdmin: user?.is_admin === 1,
+    allUsers: db.prepare('SELECT id, username, is_admin FROM users').all()
+  });
+});
+
 // Serve admin.html for admin dashboard (allow access to HTML, but API endpoints are protected)
-app.get('/admin', (req, res) => {
+app.get('/admin', requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
