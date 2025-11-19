@@ -1,0 +1,626 @@
+const express = require('express');
+const cors = require('cors');
+const Database = require('better-sqlite3');
+const path = require('path');
+const bcrypt = require('bcrypt');
+const session = require('express-session');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// AI analysis function - always returns YTA or NTA with a 1-10 score
+// Score: 1 = definitely not the asshole, 10 = definitely the asshole
+async function analyzeSituation(situation, followUpContext = null) {
+  // Combine original situation with follow-up context if provided
+  const fullContext = followUpContext 
+    ? `${situation}\n\nAdditional context: ${followUpContext}`
+    : situation;
+  
+  const situationLower = fullContext.toLowerCase();
+  
+  // Default values
+  let judgment = 'NTA';
+  let score = 5; // Neutral middle ground
+  let reasoning = 'Based on the situation described, ';
+  
+  // If OpenAI API key is provided, use it for better analysis
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const OpenAI = require('openai');
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a brutally honest, unhinged judge for "Am I the Asshole?" scenarios. You have NO filter. Be savage, funny, and brutally honest. Use colorful language, call people out, be dramatic. Make it entertaining! Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where 1 means definitely not the asshole and 10 means definitely the asshole. Format your response as: YTA/NTA [score]/10 - [your unhinged, brutally honest reasoning]. Be savage but fair.'
+          },
+          {
+            role: 'user',
+            content: `Analyze this situation and determine if they are the asshole: ${fullContext}\n\nRespond with: YTA or NTA, then a score 1-10, then your brutally honest, unhinged reasoning. Be savage and entertaining!`
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.9
+      });
+      
+      const response = completion.choices[0].message.content;
+      
+      // Parse response: Look for YTA/NTA and score
+      const responseUpper = response.toUpperCase();
+      
+      // Determine judgment
+      if (responseUpper.includes('YTA') || responseUpper.includes('YOU\'RE THE ASSHOLE') || responseUpper.includes('YOU ARE THE ASSHOLE')) {
+        judgment = 'YTA';
+      } else {
+        judgment = 'NTA';
+      }
+      
+      // Extract score (look for pattern like "8/10" or "score: 7" or just a number)
+      const scoreMatch = response.match(/(\d+)\s*\/\s*10/i) || response.match(/score[:\s]+(\d+)/i) || response.match(/\b([1-9]|10)\b/);
+      if (scoreMatch) {
+        score = parseInt(scoreMatch[1]);
+        // Ensure score is between 1-10
+        if (score < 1) score = 1;
+        if (score > 10) score = 10;
+      } else {
+        // Default score based on judgment
+        score = judgment === 'YTA' ? 7 : 3;
+      }
+      
+      // Extract reasoning (everything after the score or judgment)
+      const reasoningMatch = response.match(/[-–—]\s*(.+)/) || response.match(/:\s*(.+)/);
+      if (reasoningMatch) {
+        reasoning = reasoningMatch[1].trim();
+      } else {
+        // Remove judgment and score from response to get reasoning
+        reasoning = response
+          .replace(/^(YTA|NTA)[:\s]*/i, '')
+          .replace(/\d+\s*\/\s*10[:\s]*/i, '')
+          .replace(/score[:\s]*\d+[:\s]*/i, '')
+          .trim() || 'Based on the situation, this is a reasonable assessment.';
+      }
+      
+    } catch (error) {
+      console.error('OpenAI API error:', error.message);
+      // Fall back to rule-based system
+      return analyzeWithRules(situationLower, fullContext);
+    }
+  } else {
+    // Use rule-based system
+    return analyzeWithRules(situationLower, fullContext);
+  }
+  
+  return { judgment, score, reasoning };
+}
+
+// Rule-based analysis fallback - UNHINGED VERSION
+function analyzeWithRules(situationLower, fullContext) {
+  let judgment = 'NTA';
+  let score = 5;
+  let reasoning = '';
+  
+  // EXTREME YTA - Violence against children or vulnerable people (score 10)
+  if ((situationLower.includes('kicked') || situationLower.includes('hit') || 
+       situationLower.includes('punched') || situationLower.includes('slapped') ||
+       situationLower.includes('pushed') || situationLower.includes('shoved') ||
+       situationLower.includes('beat') || situationLower.includes('abused')) &&
+      (situationLower.includes('kid') || situationLower.includes('child') || 
+       situationLower.includes('baby') || situationLower.includes('toddler') ||
+       situationLower.includes('minor') || situationLower.includes('elderly') ||
+       situationLower.includes('old person') || situationLower.includes('disabled') ||
+       situationLower.includes('animal') || situationLower.includes('pet') ||
+       situationLower.includes('dog') || situationLower.includes('cat'))) {
+    judgment = 'YTA';
+    score = 10;
+    const responses = [
+      'You KICKED A CHILD? And you\'re asking if you\'re the asshole? BRUH. This is a 10/10 asshole move. What is wrong with you?',
+      'Violence against a kid? That\'s not just asshole behavior, that\'s literally criminal behavior. You need help, not validation.',
+      'You physically harmed a CHILD and you want to know if you\'re wrong? YES. ABSOLUTELY YES. This is unhinged behavior.',
+      'Bro you kicked a KID. A literal child. This is peak "I should be in jail" energy. Obviously YTA, what even is this question?'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // EXTREME YTA - Sexual assault, revenge porn, doxxing (score 10)
+  else if (situationLower.includes('sexual assault') || situationLower.includes('raped') ||
+           situationLower.includes('revenge porn') || situationLower.includes('nude') && situationLower.includes('shared') ||
+           situationLower.includes('doxxed') || situationLower.includes('doxxing') ||
+           situationLower.includes('leaked') && (situationLower.includes('address') || situationLower.includes('phone') || situationLower.includes('personal'))) {
+    judgment = 'YTA';
+    score = 10;
+    const responses = [
+      'This is literally illegal and you\'re asking if you\'re wrong? YES. You\'re not just an asshole, you\'re a criminal.',
+      'Bro this is giving "I committed a crime and want validation" energy. No. Absolutely not. You\'re 100% the asshole.',
+      'This is beyond asshole behavior. This is "call the police" behavior. What is wrong with you?',
+      'You did WHAT? And you think there\'s any scenario where you\'re NOT the asshole? Delusional.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Strong YTA indicators - Physical violence (score 9)
+  else if (situationLower.includes('kicked') || situationLower.includes('hit') || 
+           situationLower.includes('punched') || situationLower.includes('violence') ||
+           situationLower.includes('slapped') || situationLower.includes('beat') ||
+           situationLower.includes('assaulted') || situationLower.includes('attacked') ||
+           situationLower.includes('threw') && situationLower.includes('at') ||
+           situationLower.includes('choked') || situationLower.includes('strangled')) {
+    judgment = 'YTA';
+    score = 9;
+    const responses = [
+      'Bro, you literally did something that would make a villain in a kids movie look like a saint. This is WILD.',
+      'Okay so you\'re out here doing crimes and asking if you\'re the asshole? Yes. Obviously. The audacity is astronomical.',
+      'This is giving "I know I messed up but maybe if I ask nicely people will say it\'s fine" energy. It\'s not fine. You\'re absolutely the asshole here.',
+      'You did WHAT? And you\'re asking if YOU\'RE the problem? The math ain\'t mathing, my friend.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Strong YTA - Bigotry and discrimination (score 9)
+  else if (situationLower.includes('racist') || situationLower.includes('racism') ||
+           situationLower.includes('homophobic') || situationLower.includes('homophobia') ||
+           situationLower.includes('transphobic') || situationLower.includes('transphobia') ||
+           situationLower.includes('ableist') || situationLower.includes('ableism') ||
+           situationLower.includes('fat shamed') || situationLower.includes('fat shaming') ||
+           situationLower.includes('body shamed') || situationLower.includes('body shaming') ||
+           situationLower.includes('slur') || situationLower.includes('n-word') ||
+           situationLower.includes('f slur') || situationLower.includes('r-word')) {
+    judgment = 'YTA';
+    score = 9;
+    const responses = [
+      'You\'re being bigoted and asking if you\'re wrong? YES. Obviously. This is peak asshole behavior.',
+      'Bro this is giving "I\'m prejudiced but maybe it\'s fine" energy. It\'s not fine. You\'re absolutely the asshole.',
+      'Discrimination is never okay. You\'re 100% the asshole here, no questions asked.',
+      'The fact that you think this might be acceptable tells me everything I need to know. YTA, obviously.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Strong YTA - Serious wrongdoing (score 8-9)
+  else if (situationLower.includes('cheated') || situationLower.includes('lied') ||
+           situationLower.includes('stole') || situationLower.includes('betrayed') ||
+           situationLower.includes('abused') || situationLower.includes('manipulated') ||
+           situationLower.includes('gaslighted') || situationLower.includes('gaslighting') ||
+           situationLower.includes('stalked') || situationLower.includes('stalking') ||
+           situationLower.includes('threatened') || situationLower.includes('threat') ||
+           situationLower.includes('blackmailed') || situationLower.includes('blackmail')) {
+    judgment = 'YTA';
+    score = 8;
+    const responses = [
+      'You did something genuinely messed up and you want validation? Nope. This is asshole behavior through and through.',
+      'This is giving "I know I\'m wrong but maybe the internet will make me feel better" vibes. Spoiler: you\'re still wrong.',
+      'The fact that you\'re even questioning this tells me you know you messed up. Yes, you\'re the asshole.',
+      'Bro this is not it. You did something bad and you know it. Stop looking for excuses.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Moderate YTA indicators (score 6-7)
+  else if (situationLower.includes('selfish') || situationLower.includes('only thinking about myself') ||
+           situationLower.includes('ignored') || situationLower.includes('dismissed') ||
+           situationLower.includes('refused to help') || situationLower.includes('ghosted') ||
+           situationLower.includes('ghosting') || situationLower.includes('publicly humiliated') ||
+           situationLower.includes('embarrassed') && situationLower.includes('public') ||
+           situationLower.includes('made fun of') || situationLower.includes('mocked') ||
+           situationLower.includes('laughed at') || situationLower.includes('ridiculed') ||
+           situationLower.includes('canceled') && situationLower.includes('birthday') ||
+           situationLower.includes('ruined') && (situationLower.includes('wedding') || situationLower.includes('party') || situationLower.includes('event'))) {
+    judgment = 'YTA';
+    score = 7;
+    const responses = [
+      'You\'re giving main character syndrome and honestly? Not in a good way. The world doesn\'t revolve around you, champ.',
+      'This is peak "I\'m the only person that matters" behavior. Newsflash: other people exist and have feelings too.',
+      'You really said "me, myself, and I" and ran with it, huh? That\'s not the flex you think it is.',
+      'The audacity to be this self-centered and then ask if you\'re wrong... yes, yes you are.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Low-Moderate YTA (score 5-6)
+  else if (situationLower.includes('yelled at') || situationLower.includes('screamed at') ||
+           situationLower.includes('cussed out') || situationLower.includes('cursed at') ||
+           situationLower.includes('insulted') || situationLower.includes('name called') ||
+           situationLower.includes('called') && (situationLower.includes('stupid') || situationLower.includes('idiot') || situationLower.includes('dumb'))) {
+    judgment = 'YTA';
+    score = 6;
+    const responses = [
+      'You\'re being verbally aggressive and wondering if you\'re wrong? Yeah, probably. This is giving toxic energy.',
+      'This is giving "I lost my temper but it\'s fine" vibes. It\'s not fine. You\'re being an asshole.',
+      'You went off on someone and want validation? Nope. This is asshole behavior, even if you were frustrated.',
+      'Bro you verbally attacked someone and you\'re questioning if you\'re wrong? Yes, you are.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Strong NTA indicators (score 1-2)
+  else if (situationLower.includes('sorry') || situationLower.includes('apologize') ||
+           situationLower.includes('tried to help') || situationLower.includes('did my best') ||
+           situationLower.includes('boundary') || situationLower.includes('respect') ||
+           situationLower.includes('stood up') && (situationLower.includes('bully') || situationLower.includes('abuse')) ||
+           situationLower.includes('protected') || situationLower.includes('defended') ||
+           situationLower.includes('reported') && (situationLower.includes('abuse') || situationLower.includes('harassment') || situationLower.includes('crime')) ||
+           situationLower.includes('said no') || situationLower.includes('refused') && situationLower.includes('uncomfortable') ||
+           situationLower.includes('walked away') || situationLower.includes('left') && situationLower.includes('toxic') ||
+           situationLower.includes('cut off') && situationLower.includes('toxic') ||
+           situationLower.includes('stopped') && situationLower.includes('abuse')) {
+    judgment = 'NTA';
+    score = 2;
+    const responses = [
+      'You\'re out here being a decent human being and someone is mad about it? That\'s their problem, not yours.',
+      'You did nothing wrong and honestly, whoever is making you feel bad about this needs to touch grass.',
+      'This is giving "I\'m being gaslit" energy. You\'re fine, they\'re the problem.',
+      'You\'re literally just existing and being reasonable. If someone has an issue with that, that\'s a them problem.',
+      'You stood up for what\'s right and someone is mad? Good. They should be mad. You\'re absolutely NTA.',
+      'You protected someone or yourself? That\'s not asshole behavior, that\'s being a decent person. NTA all the way.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Moderate NTA indicators (score 3-4)
+  else if (situationLower.includes('misunderstanding') || situationLower.includes('accident') ||
+           situationLower.includes('didn\'t mean to') || situationLower.includes('unintentional') ||
+           situationLower.includes('honest mistake') || situationLower.includes('genuine mistake') ||
+           situationLower.includes('miscommunication') || situationLower.includes('misheard') ||
+           situationLower.includes('misunderstood') || situationLower.includes('wasn\'t aware') ||
+           situationLower.includes('didn\'t know') || situationLower.includes('wasn\'t informed') ||
+           situationLower.includes('forgot') && !situationLower.includes('on purpose')) {
+    judgment = 'NTA';
+    score = 3;
+    const responses = [
+      'This sounds like a classic case of "oops, my bad" and honestly? Accidents happen. You\'re good.',
+      'You didn\'t mean to cause drama and it shows. This is just life being messy, not you being an asshole.',
+      'This is giving "I made a mistake but I\'m human" vibes. We all mess up sometimes, you\'re fine.',
+      'Honestly? This seems like a genuine mistake. Unless you\'re secretly a supervillain, you\'re probably fine.',
+      'You made an honest mistake and you\'re being reasonable about it? That\'s not asshole behavior, that\'s being human.',
+      'This is just a misunderstanding. You\'re fine, don\'t stress about it.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  // Neutral/ambiguous (score 5)
+  else {
+    judgment = 'NTA';
+    score = 5;
+    const responses = [
+      'This is giving "I have no idea what\'s happening but I\'m trying my best" energy. You\'re probably fine?',
+      'The situation is messy but you seem reasonable enough. Could go either way honestly.',
+      'This is peak "life is complicated" content. You\'re probably not the asshole, but who knows anymore?',
+      'Honestly? This is giving neutral vibes. You\'re probably fine, but maybe think about it a bit more.'
+    ];
+    reasoning = responses[Math.floor(Math.random() * responses.length)];
+  }
+  
+  return { judgment, score, reasoning };
+}
+
+// Middleware
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.static('.'));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize database
+const db = new Database('ama.db');
+
+// Create tables if they don't exist
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  
+  CREATE TABLE IF NOT EXISTS submissions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    situation TEXT NOT NULL,
+    judgment TEXT,
+    reasoning TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )
+`);
+
+// Migrate existing table to add judgment, reasoning, user_id, follow_up_context, and score columns if they don't exist
+try {
+  const tableInfo = db.prepare("PRAGMA table_info(submissions)").all();
+  const hasJudgment = tableInfo.some(col => col.name === 'judgment');
+  const hasReasoning = tableInfo.some(col => col.name === 'reasoning');
+  const hasUserId = tableInfo.some(col => col.name === 'user_id');
+  const hasFollowUp = tableInfo.some(col => col.name === 'follow_up_context');
+  const hasScore = tableInfo.some(col => col.name === 'score');
+  
+  if (!hasJudgment || !hasReasoning || !hasUserId || !hasFollowUp || !hasScore) {
+    console.log('Migrating database schema...');
+    if (!hasJudgment) {
+      db.exec('ALTER TABLE submissions ADD COLUMN judgment TEXT');
+    }
+    if (!hasReasoning) {
+      db.exec('ALTER TABLE submissions ADD COLUMN reasoning TEXT');
+    }
+    if (!hasUserId) {
+      db.exec('ALTER TABLE submissions ADD COLUMN user_id INTEGER');
+    }
+    if (!hasFollowUp) {
+      db.exec('ALTER TABLE submissions ADD COLUMN follow_up_context TEXT');
+    }
+    if (!hasScore) {
+      db.exec('ALTER TABLE submissions ADD COLUMN score INTEGER DEFAULT 5');
+    }
+    console.log('Database migration complete');
+  }
+} catch (error) {
+  console.error('Migration error (this is OK if table is new):', error.message);
+  // Continue anyway - columns might already exist
+}
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Authentication required' });
+}
+
+// Authentication Routes
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+    
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Username, email, and password are required' });
+    }
+    
+    if (username.length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+    
+    // Check if user already exists
+    const existingUser = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(username, email);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username or email already exists' });
+    }
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    // Create user
+    const stmt = db.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)');
+    const result = stmt.run(username, email, passwordHash);
+    
+    // Set session
+    req.session.userId = result.lastInsertRowid;
+    req.session.username = username;
+    
+    res.json({
+      message: 'Registration successful',
+      user: {
+        id: result.lastInsertRowid,
+        username,
+        email
+      }
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Failed to register user' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    // Find user
+    const user = db.prepare('SELECT * FROM users WHERE username = ? OR email = ?').get(username, username);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    
+    // Verify password
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    
+    // Set session
+    req.session.userId = user.id;
+    req.session.username = user.username;
+    
+    res.json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Error logging in:', error);
+    res.status(500).json({ error: 'Failed to login' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to logout' });
+    }
+    res.json({ message: 'Logout successful' });
+  });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  if (req.session && req.session.userId) {
+    const user = db.prepare('SELECT id, username, email, created_at FROM users WHERE id = ?').get(req.session.userId);
+    if (user) {
+      return res.json({ user });
+    }
+  }
+  res.status(401).json({ error: 'Not authenticated' });
+});
+
+// API Routes
+app.post('/api/submissions', requireAuth, async (req, res) => {
+  try {
+    const { situation } = req.body;
+    
+    if (!situation || situation.trim().length === 0) {
+      return res.status(400).json({ error: 'Situation is required' });
+    }
+
+    // Analyze the situation
+    const { judgment, score, reasoning } = await analyzeSituation(situation.trim());
+    
+    const stmt = db.prepare('INSERT INTO submissions (user_id, situation, judgment, score, reasoning) VALUES (?, ?, ?, ?, ?)');
+    const result = stmt.run(req.session.userId, situation.trim(), judgment, score, reasoning);
+    
+    res.json({
+      id: result.lastInsertRowid,
+      judgment,
+      score,
+      reasoning,
+      message: 'Submission created successfully'
+    });
+  } catch (error) {
+    console.error('Error creating submission:', error);
+    res.status(500).json({ error: 'Failed to create submission' });
+  }
+});
+
+app.get('/api/submissions', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const stmt = db.prepare(`
+      SELECT s.*, u.username 
+      FROM submissions s 
+      LEFT JOIN users u ON s.user_id = u.id 
+      ORDER BY s.created_at DESC 
+      LIMIT ? OFFSET ?
+    `);
+    const submissions = stmt.all(limit, offset);
+    
+    const countStmt = db.prepare('SELECT COUNT(*) as total FROM submissions');
+    const { total } = countStmt.get();
+    
+    res.json({
+      submissions,
+      total,
+      limit,
+      offset
+    });
+  } catch (error) {
+    console.error('Error fetching submissions:', error);
+    res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+});
+
+app.get('/api/submissions/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const stmt = db.prepare(`
+      SELECT s.*, u.username 
+      FROM submissions s 
+      LEFT JOIN users u ON s.user_id = u.id 
+      WHERE s.id = ?
+    `);
+    const submission = stmt.get(id);
+    
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+    
+    res.json(submission);
+  } catch (error) {
+    console.error('Error fetching submission:', error);
+    res.status(500).json({ error: 'Failed to fetch submission' });
+  }
+});
+
+// Follow-up endpoint - submit additional context and re-analyze
+app.post('/api/submissions/:id/followup', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { followUpContext } = req.body;
+    
+    // Validate ID is a number
+    const submissionId = parseInt(id);
+    if (isNaN(submissionId) || submissionId <= 0) {
+      return res.status(400).json({ error: 'Invalid submission ID' });
+    }
+    
+    if (!followUpContext || followUpContext.trim().length === 0) {
+      return res.status(400).json({ error: 'Follow-up context is required' });
+    }
+    
+    // Get the original submission
+    const submission = db.prepare('SELECT * FROM submissions WHERE id = ?').get(submissionId);
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+    
+    // Verify ownership
+    if (submission.user_id !== req.session.userId) {
+      return res.status(403).json({ error: 'You can only add follow-up to your own submissions' });
+    }
+    
+    // Re-analyze with the combined context
+    const { judgment, score, reasoning } = await analyzeSituation(submission.situation, followUpContext.trim());
+    
+    // Validate judgment and reasoning are strings
+    const safeJudgment = String(judgment || 'NTA').trim();
+    const safeScore = Math.max(1, Math.min(10, parseInt(score) || 5));
+    const safeReasoning = String(reasoning || '').trim();
+    const safeFollowUp = String(followUpContext).trim();
+    
+    // Update the submission with follow-up context and new judgment
+    const updateStmt = db.prepare(`
+      UPDATE submissions 
+      SET follow_up_context = ?, 
+          judgment = ?, 
+          score = ?,
+          reasoning = ? 
+      WHERE id = ?
+    `);
+    updateStmt.run(safeFollowUp, safeJudgment, safeScore, safeReasoning, submissionId);
+    
+    res.json({
+      id: submissionId,
+      judgment: safeJudgment,
+      score: safeScore,
+      reasoning: safeReasoning,
+      followUpContext: safeFollowUp,
+      message: 'Follow-up submitted and re-analyzed successfully'
+    });
+  } catch (error) {
+    console.error('Error processing follow-up:', error);
+    res.status(500).json({ error: error.message || 'Failed to process follow-up' });
+  }
+});
+
+// Serve index.html for root route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});

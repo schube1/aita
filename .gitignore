@@ -1,0 +1,5 @@
+node_modules/
+ama.db
+ama.db-journal
+.env
+*.log
