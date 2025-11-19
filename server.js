@@ -846,6 +846,29 @@ app.get('/api/debug/admin-status', requireAuth, (req, res) => {
 });
 
 // Endpoint to manually set admin status (for fixing Railway database)
+// GET version - just visit the URL in browser
+app.get('/api/debug/set-admin/:username', requireAuth, async (req, res) => {
+  try {
+    const { username } = req.params;
+    if (!username) {
+      return res.status(400).json({ error: 'Username required' });
+    }
+    
+    const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
+    const result = updateAdmin.run(username);
+    
+    if (result.changes > 0) {
+      res.json({ message: `User "${username}" is now an admin`, changes: result.changes });
+    } else {
+      res.status(404).json({ error: `User "${username}" not found` });
+    }
+  } catch (error) {
+    console.error('Error setting admin:', error);
+    res.status(500).json({ error: 'Failed to set admin status' });
+  }
+});
+
+// POST version
 app.post('/api/debug/set-admin', requireAuth, async (req, res) => {
   try {
     const { username } = req.body;
