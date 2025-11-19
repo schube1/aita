@@ -65,7 +65,7 @@ async function analyzeSituation(situation, followUpContext = null) {
                   content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning. Be fair and accurate.`
                 }
               ],
-              max_tokens: 200,
+              max_tokens: 250,
               temperature: 0.7
       });
       
@@ -96,7 +96,8 @@ async function analyzeSituation(situation, followUpContext = null) {
       
       // Extract reasoning (everything after the score or judgment)
       const reasoningMatch = response.match(/[-–—]\s*(.+)/) || response.match(/:\s*(.+)/);
-      if (reasoningMatch) {
+      if (reasoningMatch && reasoningMatch[1].trim().length > 10) {
+        // Only use match if it has substantial content (more than 10 chars)
         reasoning = reasoningMatch[1].trim();
       } else {
         // Remove judgment and score from response to get reasoning
@@ -104,7 +105,23 @@ async function analyzeSituation(situation, followUpContext = null) {
           .replace(/^(YTA|NTA)[:\s]*/i, '')
           .replace(/\d+\s*\/\s*10[:\s]*/i, '')
           .replace(/score[:\s]*\d+[:\s]*/i, '')
-          .trim() || 'Based on the situation, this is a reasonable assessment.';
+          .replace(/here'?s why[:\s]*/i, '')
+          .replace(/why[:\s]*/i, '')
+          .trim();
+        
+        // If reasoning is empty or too short, provide fallback
+        if (!reasoning || reasoning.length < 10) {
+          reasoning = judgment === 'YTA' 
+            ? 'Based on the situation described, your actions were inappropriate and harmful to others.'
+            : 'Based on the situation described, your actions were reasonable and justified.';
+        }
+      }
+      
+      // Ensure reasoning isn't empty
+      if (!reasoning || reasoning.trim().length === 0) {
+        reasoning = judgment === 'YTA' 
+          ? 'Based on the situation described, your actions were inappropriate and harmful to others.'
+          : 'Based on the situation described, your actions were reasonable and justified.';
       }
       
       // Mark that AI was used
