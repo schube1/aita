@@ -24,13 +24,29 @@ async function analyzeSituation(situation, followUpContext = null) {
   let reasoning = 'Based on the situation described, ';
   
   // If OpenAI API key is provided, use it for better analysis
+  // Supports OpenAI and OpenAI-compatible APIs (like Nebius, Together AI, etc.)
   if (process.env.OPENAI_API_KEY) {
     try {
       const OpenAI = require('openai');
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const apiConfig = {
+        apiKey: process.env.OPENAI_API_KEY
+      };
+      
+      // If NEBUIS_API_BASE_URL is set, use it (for Nebius or other OpenAI-compatible providers)
+      if (process.env.NEBUIS_API_BASE_URL) {
+        apiConfig.baseURL = process.env.NEBUIS_API_BASE_URL;
+      } else if (process.env.OPENAI_API_BASE_URL) {
+        // Fallback to OPENAI_API_BASE_URL for other providers
+        apiConfig.baseURL = process.env.OPENAI_API_BASE_URL;
+      }
+      
+      const openai = new OpenAI(apiConfig);
+      
+      // Use custom model if provided (for Nebius or other providers), otherwise default to gpt-3.5-turbo
+      const model = process.env.AI_MODEL || 'gpt-3.5-turbo';
       
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: model,
         messages: [
           {
             role: 'system',
