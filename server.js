@@ -32,18 +32,26 @@ async function analyzeSituation(situation, followUpContext = null) {
         apiKey: process.env.OPENAI_API_KEY
       };
       
+      let apiProvider = 'OpenAI';
       // If NEBUIS_API_BASE_URL is set, use it (for Nebius or other OpenAI-compatible providers)
       if (process.env.NEBUIS_API_BASE_URL) {
         apiConfig.baseURL = process.env.NEBUIS_API_BASE_URL;
+        apiProvider = 'Nebius';
+        console.log('🤖 Using Nebius API:', process.env.NEBUIS_API_BASE_URL);
       } else if (process.env.OPENAI_API_BASE_URL) {
         // Fallback to OPENAI_API_BASE_URL for other providers
         apiConfig.baseURL = process.env.OPENAI_API_BASE_URL;
+        apiProvider = 'Custom OpenAI-compatible';
+        console.log('🤖 Using custom API:', process.env.OPENAI_API_BASE_URL);
+      } else {
+        console.log('🤖 Using OpenAI API (default)');
       }
       
       const openai = new OpenAI(apiConfig);
       
       // Use custom model if provided (for Nebius or other providers), otherwise default to gpt-3.5-turbo
       const model = process.env.AI_MODEL || 'gpt-3.5-turbo';
+      console.log(`🤖 Using model: ${model} via ${apiProvider}`);
       
       const completion = await openai.chat.completions.create({
         model: model,
@@ -62,6 +70,7 @@ async function analyzeSituation(situation, followUpContext = null) {
       });
       
       const response = completion.choices[0].message.content;
+      console.log(`✅ ${apiProvider} API response received:`, response.substring(0, 100) + '...');
       
       // Parse response: Look for YTA/NTA and score
       const responseUpper = response.toUpperCase();
@@ -98,17 +107,22 @@ async function analyzeSituation(situation, followUpContext = null) {
           .trim() || 'Based on the situation, this is a reasonable assessment.';
       }
       
+      // Mark that AI was used
+      return { judgment, score, reasoning, aiUsed: true, aiProvider: apiProvider };
+      
     } catch (error) {
-      console.error('OpenAI API error:', error.message);
+      console.error(`❌ ${apiProvider} API error:`, error.message);
+      console.log('⚠️ Falling back to rule-based judgment system');
       // Fall back to rule-based system
-      return analyzeWithRules(situationLower, fullContext);
+      const result = analyzeWithRules(situationLower, fullContext);
+      return { ...result, aiUsed: false, aiError: error.message };
     }
   } else {
+    console.log('⚠️ No API key found - using rule-based judgment system');
     // Use rule-based system
-    return analyzeWithRules(situationLower, fullContext);
+    const result = analyzeWithRules(situationLower, fullContext);
+    return { ...result, aiUsed: false };
   }
-  
-  return { judgment, score, reasoning };
 }
 
 // Rule-based analysis fallback - UNHINGED VERSION
@@ -567,7 +581,8 @@ app.post('/api/submissions', requireAuth, async (req, res) => {
     const publicSubmission = isPublic === true || isPublic === 'true' || isPublic === 1 ? 1 : 0;
 
     // Analyze the situation
-    const { judgment, score, reasoning } = await analyzeSituation(situation.trim());
+    const analysis = await analyzeSituation(situation.trim());
+    const { judgment, score, reasoning, aiUsed, aiProvider, aiError } = analysis;
     
     const stmt = db.prepare('INSERT INTO submissions (user_id, situation, judgment, score, reasoning, is_anonymous, is_public) VALUES (?, ?, ?, ?, ?, ?, ?)');
     const result = stmt.run(req.session.userId, situation.trim(), judgment, score, reasoning, anonymous, publicSubmission);
@@ -579,6 +594,9 @@ app.post('/api/submissions', requireAuth, async (req, res) => {
       reasoning,
       isAnonymous: anonymous === 1,
       isPublic: publicSubmission === 1,
+      aiUsed: aiUsed || false,
+      aiProvider: aiProvider || null,
+      aiError: aiError || null,
       message: 'Submission created successfully'
     });
   } catch (error) {
