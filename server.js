@@ -584,6 +584,36 @@ app.get('/api/auth/me', (req, res) => {
   res.status(401).json({ error: 'Not authenticated' });
 });
 
+// Get user profile stats
+app.get('/api/user/stats', requireAuth, (req, res) => {
+  try {
+    const userId = req.session.userId;
+    
+    // Get total submissions count
+    const totalSubmissions = db.prepare('SELECT COUNT(*) as count FROM submissions WHERE user_id = ?').get(userId);
+    
+    // Get asshole count (score 6-10)
+    const assholeCount = db.prepare('SELECT COUNT(*) as count FROM submissions WHERE user_id = ? AND score >= 6 AND score <= 10').get(userId);
+    
+    // Calculate percentage
+    const total = totalSubmissions.count || 0;
+    const assholeTotal = assholeCount.count || 0;
+    const assholePercentage = total > 0 ? Math.round((assholeTotal / total) * 100) : 0;
+    
+    // Get user created_at
+    const user = db.prepare('SELECT created_at FROM users WHERE id = ?').get(userId);
+    
+    res.json({
+      totalSubmissions: total,
+      assholePercentage: assholePercentage,
+      joinedDate: user.created_at
+    });
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    res.status(500).json({ error: 'Failed to fetch user stats' });
+  }
+});
+
 // API Routes
 app.post('/api/submissions', requireAuth, async (req, res) => {
   try {

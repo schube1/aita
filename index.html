@@ -1410,9 +1410,36 @@
             }
         }
 
-        function renderProfile() {
+        async function renderProfile() {
             if (currentUser) {
                 const firstLetter = currentUser.username.charAt(0).toUpperCase();
+                
+                // Fetch user stats
+                let userStats = null;
+                try {
+                    const statsResponse = await fetch('/api/user/stats', {
+                        credentials: 'include'
+                    });
+                    if (statsResponse.ok) {
+                        userStats = await statsResponse.json();
+                    }
+                } catch (error) {
+                    console.error('Error fetching user stats:', error);
+                }
+                
+                // Format join date as "Jan 2025"
+                let joinDateText = '';
+                if (userStats && userStats.joinedDate) {
+                    const joinDate = new Date(userStats.joinedDate);
+                    joinDateText = joinDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                } else if (currentUser.created_at) {
+                    const joinDate = new Date(currentUser.created_at);
+                    joinDateText = joinDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                }
+                
+                // Format asshole percentage
+                const assholePercentage = userStats ? userStats.assholePercentage : 0;
+                
                 profileContent.innerHTML = `
                     <div class="profile-card">
                         <div class="profile-header">
@@ -1420,7 +1447,23 @@
                             <div class="profile-username">${escapeHtml(currentUser.username)}</div>
                             <div class="profile-info">Logged in</div>
                         </div>
-                        <div class="profile-actions">
+                        <div class="profile-actions" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-color);">
+                            ${joinDateText ? `
+                                <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Joined in ${joinDateText}</p>
+                                </div>
+                            ` : ''}
+                            ${userStats && userStats.totalSubmissions > 0 ? `
+                                <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">Asshole Percentage</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 1.5rem; font-weight: 700; color: ${assholePercentage >= 50 ? '#e74c3c' : '#4a90e2'};">${assholePercentage}%</p>
+                                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: var(--text-secondary);">Based on ${userStats.totalSubmissions} submission${userStats.totalSubmissions !== 1 ? 's' : ''} (score 6-10 = asshole)</p>
+                                </div>
+                            ` : userStats && userStats.totalSubmissions === 0 ? `
+                                <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px;">
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">No submissions yet</p>
+                                </div>
+                            ` : ''}
                             <button class="profile-logout-btn" id="profileLogoutBtn">Logout</button>
                         </div>
                     </div>
@@ -1449,7 +1492,7 @@
                 profileContent.innerHTML = `
                     <div class="profile-card">
                         <div class="profile-header">
-                            <div class="profile-avatar">👤</div>
+                            <div class="profile-avatar">?</div>
                             <div class="profile-username">Not Logged In</div>
                             <div class="profile-info">Please log in to view your profile</div>
                         </div>
