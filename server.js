@@ -329,7 +329,7 @@ db.exec(`
   )
 `);
 
-// Migrate existing table to add judgment, reasoning, user_id, follow_up_context, and score columns if they don't exist
+// Migrate existing table to add judgment, reasoning, user_id, follow_up_context, score, is_anonymous, and is_public columns if they don't exist
 try {
   const tableInfo = db.prepare("PRAGMA table_info(submissions)").all();
   const hasJudgment = tableInfo.some(col => col.name === 'judgment');
@@ -337,8 +337,10 @@ try {
   const hasUserId = tableInfo.some(col => col.name === 'user_id');
   const hasFollowUp = tableInfo.some(col => col.name === 'follow_up_context');
   const hasScore = tableInfo.some(col => col.name === 'score');
+  const hasIsAnonymous = tableInfo.some(col => col.name === 'is_anonymous');
+  const hasIsPublic = tableInfo.some(col => col.name === 'is_public');
   
-  if (!hasJudgment || !hasReasoning || !hasUserId || !hasFollowUp || !hasScore) {
+  if (!hasJudgment || !hasReasoning || !hasUserId || !hasFollowUp || !hasScore || !hasIsAnonymous || !hasIsPublic) {
     console.log('Migrating database schema...');
     if (!hasJudgment) {
       db.exec('ALTER TABLE submissions ADD COLUMN judgment TEXT');
@@ -355,11 +357,39 @@ try {
     if (!hasScore) {
       db.exec('ALTER TABLE submissions ADD COLUMN score INTEGER DEFAULT 5');
     }
+    if (!hasIsAnonymous) {
+      db.exec('ALTER TABLE submissions ADD COLUMN is_anonymous INTEGER DEFAULT 0');
+    }
+    if (!hasIsPublic) {
+      db.exec('ALTER TABLE submissions ADD COLUMN is_public INTEGER DEFAULT 1');
+    }
     console.log('Database migration complete');
   }
 } catch (error) {
   console.error('Migration error (this is OK if table is new):', error.message);
   // Continue anyway - columns might already exist
+}
+
+// Migrate users table to add is_admin column
+try {
+  const usersTableInfo = db.prepare("PRAGMA table_info(users)").all();
+  const hasIsAdmin = usersTableInfo.some(col => col.name === 'is_admin');
+  
+  if (!hasIsAdmin) {
+    console.log('Adding is_admin column to users table...');
+    db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0');
+    
+    // Set 'vinz' user as admin
+    const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
+    updateAdmin.run('vinz');
+    console.log('Set user "vinz" as admin');
+  } else {
+    // Ensure 'vinz' is admin even if column already exists
+    const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
+    updateAdmin.run('vinz');
+  }
+} catch (error) {
+  console.error('Migration error (this is OK if table is new):', error.message);
 }
 
 // Authentication middleware
@@ -368,6 +398,20 @@ function requireAuth(req, res, next) {
     return next();
   }
   return res.status(401).json({ error: 'Authentication required' });
+}
+
+// Admin middleware - requires authentication AND admin status
+function requireAdmin(req, res, next) {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  const user = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session.userId);
+  if (!user || !user.is_admin) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  
+  next();
 }
 
 // Authentication Routes
@@ -478,23 +522,29 @@ app.get('/api/auth/me', (req, res) => {
 // API Routes
 app.post('/api/submissions', requireAuth, async (req, res) => {
   try {
-    const { situation } = req.body;
+    const { situation, isAnonymous, isPublic } = req.body;
     
     if (!situation || situation.trim().length === 0) {
       return res.status(400).json({ error: 'Situation is required' });
     }
 
+    // Validate boolean values
+    const anonymous = isAnonymous === true || isAnonymous === 'true' || isAnonymous === 1 ? 1 : 0;
+    const publicSubmission = isPublic === true || isPublic === 'true' || isPublic === 1 ? 1 : 0;
+
     // Analyze the situation
     const { judgment, score, reasoning } = await analyzeSituation(situation.trim());
     
-    const stmt = db.prepare('INSERT INTO submissions (user_id, situation, judgment, score, reasoning) VALUES (?, ?, ?, ?, ?)');
-    const result = stmt.run(req.session.userId, situation.trim(), judgment, score, reasoning);
+    const stmt = db.prepare('INSERT INTO submissions (user_id, situation, judgment, score, reasoning, is_anonymous, is_public) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    const result = stmt.run(req.session.userId, situation.trim(), judgment, score, reasoning, anonymous, publicSubmission);
     
     res.json({
       id: result.lastInsertRowid,
       judgment,
       score,
       reasoning,
+      isAnonymous: anonymous === 1,
+      isPublic: publicSubmission === 1,
       message: 'Submission created successfully'
     });
   } catch (error) {
@@ -507,18 +557,64 @@ app.get('/api/submissions', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
+    const showMineOnly = req.query.mine === 'true' || req.query.mine === '1';
+    const currentUserId = req.session ? req.session.userId : null;
     
-    const stmt = db.prepare(`
-      SELECT s.*, u.username 
+    // Build query - show username based on anonymous flag and view type
+    // If showing "My Submissions", always show username (even if anonymous)
+    // If showing "All Submissions", hide username if anonymous
+    let query = `
+      SELECT s.*, 
+        CASE 
+          WHEN ${showMineOnly ? '0' : 's.is_anonymous = 1'} THEN NULL
+          ELSE u.username 
+        END as username
       FROM submissions s 
       LEFT JOIN users u ON s.user_id = u.id 
-      ORDER BY s.created_at DESC 
-      LIMIT ? OFFSET ?
-    `);
-    const submissions = stmt.all(limit, offset);
+      WHERE 1=1
+    `;
     
-    const countStmt = db.prepare('SELECT COUNT(*) as total FROM submissions');
-    const { total } = countStmt.get();
+    const params = [];
+    
+    // If showing only my submissions
+    if (showMineOnly && currentUserId) {
+      query += ' AND s.user_id = ?';
+      params.push(currentUserId);
+    } else {
+      // Only show public submissions to non-owners, or all submissions if it's the owner
+      if (currentUserId) {
+        query += ' AND (s.is_public = 1 OR s.user_id = ?)';
+        params.push(currentUserId);
+      } else {
+        // Not logged in - only show public submissions
+        query += ' AND s.is_public = 1';
+      }
+    }
+    
+    query += ' ORDER BY s.created_at DESC LIMIT ? OFFSET ?';
+    params.push(limit, offset);
+    
+    const stmt = db.prepare(query);
+    const submissions = stmt.all(...params);
+    
+    // Get total count with same filters
+    let countQuery = 'SELECT COUNT(*) as total FROM submissions WHERE 1=1';
+    const countParams = [];
+    
+    if (showMineOnly && currentUserId) {
+      countQuery += ' AND user_id = ?';
+      countParams.push(currentUserId);
+    } else {
+      if (currentUserId) {
+        countQuery += ' AND (is_public = 1 OR user_id = ?)';
+        countParams.push(currentUserId);
+      } else {
+        countQuery += ' AND is_public = 1';
+      }
+    }
+    
+    const countStmt = db.prepare(countQuery);
+    const { total } = countStmt.get(...countParams);
     
     res.json({
       submissions,
@@ -535,8 +631,14 @@ app.get('/api/submissions', (req, res) => {
 app.get('/api/submissions/:id', (req, res) => {
   try {
     const { id } = req.params;
+    const currentUserId = req.session ? req.session.userId : null;
+    
     const stmt = db.prepare(`
-      SELECT s.*, u.username 
+      SELECT s.*, 
+        CASE 
+          WHEN s.is_anonymous = 1 THEN NULL
+          ELSE u.username 
+        END as username
       FROM submissions s 
       LEFT JOIN users u ON s.user_id = u.id 
       WHERE s.id = ?
@@ -545,6 +647,11 @@ app.get('/api/submissions/:id', (req, res) => {
     
     if (!submission) {
       return res.status(404).json({ error: 'Submission not found' });
+    }
+    
+    // Check if user can view this submission (must be public or owner)
+    if (submission.is_public !== 1 && submission.user_id !== currentUserId) {
+      return res.status(403).json({ error: 'This submission is private' });
     }
     
     res.json(submission);
@@ -615,9 +722,103 @@ app.post('/api/submissions/:id/followup', requireAuth, async (req, res) => {
   }
 });
 
+// Admin Routes - Protected by requireAdmin middleware
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        id, 
+        username, 
+        email, 
+        is_admin,
+        created_at,
+        (SELECT COUNT(*) FROM submissions WHERE user_id = users.id) as submission_count
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    const users = stmt.all();
+    
+    res.json({ users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  try {
+    const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get();
+    const totalSubmissions = db.prepare('SELECT COUNT(*) as count FROM submissions').get();
+    const avgScore = db.prepare('SELECT AVG(score) as avg FROM submissions WHERE score IS NOT NULL').get();
+    
+    const ytaCount = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE judgment = 'YTA'").get();
+    const ntaCount = db.prepare("SELECT COUNT(*) as count FROM submissions WHERE judgment = 'NTA'").get();
+    
+    const submissionsByUser = db.prepare(`
+      SELECT 
+        u.username,
+        COUNT(s.id) as submission_count,
+        AVG(s.score) as avg_score
+      FROM users u
+      LEFT JOIN submissions s ON u.id = s.user_id
+      GROUP BY u.id, u.username
+      ORDER BY submission_count DESC
+    `).all();
+    
+    res.json({
+      totalUsers: totalUsers.count,
+      totalSubmissions: totalSubmissions.count,
+      averageScore: avgScore.avg ? parseFloat(avgScore.avg.toFixed(2)) : 0,
+      ytaCount: ytaCount.count,
+      ntaCount: ntaCount.count,
+      submissionsByUser
+    });
+  } catch (error) {
+    console.error('Error fetching stats:', error);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+app.get('/api/admin/submissions', requireAdmin, (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const stmt = db.prepare(`
+      SELECT 
+        s.*, 
+        u.username,
+        u.email
+      FROM submissions s 
+      LEFT JOIN users u ON s.user_id = u.id 
+      ORDER BY s.created_at DESC 
+      LIMIT ? OFFSET ?
+    `);
+    const submissions = stmt.all(limit, offset);
+    
+    const countStmt = db.prepare('SELECT COUNT(*) as total FROM submissions');
+    const { total } = countStmt.get();
+    
+    res.json({
+      submissions,
+      total,
+      limit,
+      offset
+    });
+  } catch (error) {
+    console.error('Error fetching admin submissions:', error);
+    res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+});
+
 // Serve index.html for root route
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Serve admin.html for admin dashboard (allow access to HTML, but API endpoints are protected)
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 // Start server

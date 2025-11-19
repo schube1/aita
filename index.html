@@ -541,78 +541,207 @@
 
 
         .submission-card {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--accent-color);
-            box-shadow: 0 2px 8px var(--shadow);
-            transition: all 0.2s ease;
+            background: white;
+            border-radius: 0;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            position: relative;
+            border-left: 4px solid transparent;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
         }
 
         .submission-card:hover {
-            box-shadow: 0 4px 16px var(--shadow-hover);
-            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .submission-card.yta-card {
+            border-left-color: #e74c3c;
+        }
+
+        .submission-card.nta-card {
+            border-left-color: #4a90e2;
         }
 
         .submission-card-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            padding: 12px 16px;
+            background: white;
+        }
+
+        .submission-header-left {
+            flex: 1;
         }
 
         .submission-id {
             color: var(--text-tertiary);
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .submission-meta-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 2px;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
         }
 
         .submission-date {
             color: var(--text-tertiary);
+            font-size: 0.75rem;
+        }
+
+        .rating-badge-large {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+
+        .rating-verdict {
             font-size: 0.85rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .rating-verdict.yta {
+            color: #e74c3c;
+        }
+
+        .rating-verdict.nta {
+            color: #4a90e2;
+        }
+
+        .rating-number {
+            font-size: 1.8rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .rating-number.yta {
+            color: #e74c3c;
+        }
+
+        .rating-number.nta {
+            color: #4a90e2;
+        }
+
+        .rating-out-of {
+            font-size: 0.65rem;
+            color: var(--text-tertiary);
+            margin-top: -2px;
+        }
+
+        .submission-card-body {
+            padding: 0 16px 12px 16px;
         }
 
         .submission-card-text {
-            color: var(--text-tertiary);
+            color: var(--text-primary);
             line-height: 1.6;
             white-space: pre-wrap;
-            margin-bottom: 15px;
-        }
-
-        .submission-judgment {
-            margin-top: 15px;
-            padding: 15px;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-        }
-
-        .submission-judgment.yta {
-            background: #e74c3c;
-        }
-
-        .submission-judgment.nta {
-            background: #4a90e2;
-        }
-
-        .submission-judgment.esh {
-            background: #f39c12;
-        }
-
-        .submission-judgment.nah {
-            background: #3498db;
-        }
-
-        .submission-judgment.info {
-            background: #95a5a6;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            font-weight: 400;
+            max-height: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            line-clamp: 5;
+            -webkit-box-orient: vertical;
         }
 
         .submission-reasoning {
-            margin-top: 10px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 0;
+            border-top: 2px solid var(--accent-color);
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .reasoning-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             color: var(--text-tertiary);
-            font-size: 0.9rem;
-            font-style: italic;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .follow-up-context-display {
+            margin-top: 12px;
+            padding: 12px;
+            background: #fffbf0;
+            border-radius: 0;
+            border-top: 2px solid #f39c12;
+        }
+
+        .follow-up-context-label {
+            font-weight: 700;
+            color: #856404;
+            font-size: 0.7rem;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .follow-up-context-text {
+            color: #856404;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .submission-footer {
+            padding: 10px 16px;
+            background: #f8f9fa;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .score-visual {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-dots {
+            display: flex;
+            gap: 3px;
+        }
+
+        .score-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .score-dot.active.yta {
+            background: #e74c3c;
+            transform: scale(1.15);
+        }
+
+        .score-dot.active.nta {
+            background: #4a90e2;
+            transform: scale(1.15);
         }
 
         .empty-state {
@@ -901,6 +1030,27 @@
                 </div>
             </div>
             
+            <div style="margin-top: 20px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px; border: 1px solid var(--border-color);">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: var(--text-primary);">
+                        <input type="checkbox" id="isPublic" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <span>Make this submission public</span>
+                    </label>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; margin-left: 26px;">
+                        Public submissions can be seen by everyone. Private submissions are only visible to you.
+                    </p>
+                </div>
+                <div id="anonymousOption" style="display: block;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: var(--text-primary);">
+                        <input type="checkbox" id="isAnonymous" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span>Post anonymously</span>
+                    </label>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; margin-left: 26px;">
+                        Your username will be hidden and shown as "Anonymous"
+                    </p>
+                </div>
+            </div>
+            
             <div class="button-group">
                 <button type="submit" class="submit-btn">Submit</button>
                 <button type="button" class="clear-btn" id="clearBtn">Clear</button>
@@ -920,8 +1070,16 @@
     <div class="submissions-view" id="submissionsView">
         <div class="submissions-container">
             <div class="view-header">
-                <h1>All Submissions</h1>
-                <p>Browse all submitted situations and their verdicts</p>
+                <h1>Submissions</h1>
+                <p>Browse submitted situations and their verdicts</p>
+                <div style="margin-top: 16px; display: flex; gap: 12px; align-items: center;">
+                    <button id="showAllBtn" class="nav-btn" style="padding: 8px 16px; background: var(--accent-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        All Submissions
+                    </button>
+                    <button id="showMineBtn" class="nav-btn" style="padding: 8px 16px; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        My Submissions
+                    </button>
+                </div>
             </div>
             <div id="submissionsContainer">
                 <div class="empty-state" style="background: white; padding: 40px; border-radius: 10px;">Loading submissions...</div>
@@ -960,9 +1118,15 @@
         const registerError = document.getElementById('registerError');
         const darkModeBtn = document.getElementById('darkModeBtn');
         const darkModeIcon = document.getElementById('darkModeIcon');
+        const showAllBtn = document.getElementById('showAllBtn');
+        const showMineBtn = document.getElementById('showMineBtn');
+        const isPublicCheckbox = document.getElementById('isPublic');
+        const isAnonymousCheckbox = document.getElementById('isAnonymous');
+        const anonymousOption = document.getElementById('anonymousOption');
 
         let currentUser = null;
         let currentSubmissionId = null;
+        let showMineOnly = false;
 
         // Dark mode functionality
         function initDarkMode() {
@@ -1287,7 +1451,11 @@
                 
                 submissionsContainer.innerHTML = '<div class="empty-state" style="background: white; padding: 40px; border-radius: 10px;">Loading submissions...</div>';
                 
-                const response = await fetch('/api/submissions?limit=20', {
+                const url = showMineOnly && currentUser 
+                    ? '/api/submissions?limit=100&mine=true'
+                    : '/api/submissions?limit=100';
+                
+                const response = await fetch(url, {
                     credentials: 'include'
                 });
                 
@@ -1312,25 +1480,64 @@
                     
                     const score = sub.score !== null && sub.score !== undefined ? Math.max(1, Math.min(10, parseInt(sub.score) || 5)) : 5;
                     
+                    const displayUsername = sub.username ? escapeHtml(sub.username) : 'Anonymous';
+                    
+                    // Create score dots
+                    const scoreDots = Array.from({ length: 10 }, (_, i) => {
+                        const isActive = i < score;
+                        return `<div class="score-dot ${isActive ? `active ${judgmentClass}` : ''}"></div>`;
+                    }).join('');
+                    
                     return `
-                        <div class="submission-card" style="background: white; margin-bottom: 20px;">
+                        <div class="submission-card ${judgmentClass}-card">
                             <div class="submission-card-header">
-                                <span class="submission-id">#${sub.id}${sub.username ? ` by ${escapeHtml(sub.username)}` : ''}</span>
-                                <span class="submission-date">${formatDate(sub.created_at)}</span>
+                                <div class="submission-header-left">
+                                    <div style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">
+                                        ${displayUsername}
+                                    </div>
+                                    <div class="submission-meta-info">
+                                        <span class="submission-date">${formatDate(sub.created_at)}</span>
+                                    </div>
+                                </div>
+                                ${sub.judgment ? `
+                                    <div class="rating-badge-large">
+                                        <div class="rating-verdict ${judgmentClass}">${sub.judgment.toUpperCase()}</div>
+                                        <div class="rating-number ${judgmentClass}">${score}</div>
+                                        <div class="rating-out-of">out of 10</div>
+                                    </div>
+                                ` : `
+                                    <div class="rating-badge-large">
+                                        <div style="color: #95a5a6; font-size: 0.9rem;">Pending</div>
+                                    </div>
+                                `}
                             </div>
-                            <div class="submission-card-text">${escapeHtml(sub.situation)}</div>
-                            ${sub.follow_up_context ? `
-                                <div class="follow-up-context-display" style="margin-top: 12px;">
-                                    <div class="follow-up-context-label">Additional Context:</div>
-                                    <div class="follow-up-context-text">${escapeHtml(sub.follow_up_context)}</div>
-                                </div>
-                            ` : ''}
+                            <div class="submission-card-body">
+                                <div class="submission-card-text">${escapeHtml(sub.situation)}</div>
+                                ${sub.follow_up_context ? `
+                                    <div class="follow-up-context-display">
+                                        <div class="follow-up-context-label">Additional Context</div>
+                                        <div class="follow-up-context-text">${escapeHtml(sub.follow_up_context)}</div>
+                                    </div>
+                                ` : ''}
+                                ${sub.judgment && sub.reasoning ? `
+                                    <div class="submission-reasoning">
+                                        <div class="reasoning-label">Verdict</div>
+                                        <div>${escapeHtml(sub.reasoning)}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
                             ${sub.judgment ? `
-                                <div class="submission-judgment ${judgmentClass}" style="display: flex; align-items: center; gap: 10px; margin-top: 12px;">
-                                    <span>${sub.judgment.toUpperCase()}</span>
-                                    <span style="font-weight: 600; font-size: 1.1rem;">${score}/10</span>
+                                <div class="submission-footer">
+                                    <div class="score-visual">
+                                        <span style="font-size: 0.7rem; color: var(--text-tertiary); font-weight: 600; min-width: 50px;">Score:</span>
+                                        <div class="score-dots">
+                                            ${scoreDots}
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary); font-weight: 600;">
+                                        ${score <= 3 ? 'NTA' : score >= 8 ? 'YTA' : score >= 5 ? 'YTA' : 'NTA'}
+                                    </div>
                                 </div>
-                                ${sub.reasoning ? `<div class="submission-reasoning">${escapeHtml(sub.reasoning)}</div>` : ''}
                             ` : ''}
                         </div>
                     `;
@@ -1365,6 +1572,46 @@
         homeBtn.addEventListener('click', () => showView('main'));
         submissionsBtn.addEventListener('click', () => showView('submissions'));
 
+        // Toggle between "All Submissions" and "My Submissions"
+        if (showAllBtn && showMineBtn) {
+            showAllBtn.addEventListener('click', () => {
+                showMineOnly = false;
+                showAllBtn.style.background = 'var(--accent-color)';
+                showAllBtn.style.color = 'white';
+                showMineBtn.style.background = 'var(--bg-tertiary)';
+                showMineBtn.style.color = 'var(--text-primary)';
+                loadSubmissions();
+            });
+
+            showMineBtn.addEventListener('click', () => {
+                if (!currentUser) {
+                    showMessage('Please log in to view your submissions.', true);
+                    showAuthModal('login');
+                    return;
+                }
+                showMineOnly = true;
+                showMineBtn.style.background = 'var(--accent-color)';
+                showMineBtn.style.color = 'white';
+                showAllBtn.style.background = 'var(--bg-tertiary)';
+                showAllBtn.style.color = 'var(--text-primary)';
+                loadSubmissions();
+            });
+        }
+
+        // Update anonymous option visibility based on public checkbox
+        if (isPublicCheckbox && anonymousOption) {
+            isPublicCheckbox.addEventListener('change', () => {
+                if (isPublicCheckbox.checked) {
+                    anonymousOption.style.display = 'block';
+                } else {
+                    anonymousOption.style.display = 'none';
+                    if (isAnonymousCheckbox) {
+                        isAnonymousCheckbox.checked = false; // Uncheck anonymous if private
+                    }
+                }
+            });
+        }
+
         // Load submissions when submissions view is shown (but not on initial page load)
         // Submissions will load when user clicks the submissions button
 
@@ -1391,6 +1638,9 @@
             form.classList.add('loading');
             messageArea.innerHTML = '';
 
+            const isPublic = isPublicCheckbox.checked;
+            const isAnonymous = isAnonymousCheckbox.checked && isPublic; // Only allow anonymous if public
+            
             try {
                 const response = await fetch('/api/submissions', {
                     method: 'POST',
@@ -1398,7 +1648,11 @@
                         'Content-Type': 'application/json',
                     },
                     credentials: 'include',
-                    body: JSON.stringify({ situation })
+                    body: JSON.stringify({ 
+                        situation,
+                        isPublic: isPublic,
+                        isAnonymous: isAnonymous
+                    })
                 });
 
                 const data = await response.json();
