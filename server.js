@@ -383,15 +383,21 @@ try {
   if (!hasIsAdmin) {
     console.log('Adding is_admin column to users table...');
     db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0');
-    
-    // Set 'vinz' user as admin
-    const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
-    updateAdmin.run('vinz');
+  }
+  
+  // Always ensure 'vinz' is admin (runs every time server starts)
+  const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
+  const result = updateAdmin.run('vinz');
+  if (result.changes > 0) {
     console.log('Set user "vinz" as admin');
   } else {
-    // Ensure 'vinz' is admin even if column already exists
-    const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
-    updateAdmin.run('vinz');
+    // Check if vinz user exists
+    const vinzUser = db.prepare('SELECT id, username FROM users WHERE username = ?').get('vinz');
+    if (vinzUser) {
+      console.log('User "vinz" exists but admin flag was already set');
+    } else {
+      console.log('User "vinz" not found in database');
+    }
   }
 } catch (error) {
   console.error('Migration error (this is OK if table is new):', error.message);
@@ -837,6 +843,28 @@ app.get('/api/debug/admin-status', requireAuth, (req, res) => {
     isAdmin: user?.is_admin === 1,
     allUsers: db.prepare('SELECT id, username, is_admin FROM users').all()
   });
+});
+
+// Endpoint to manually set admin status (for fixing Railway database)
+app.post('/api/debug/set-admin', requireAuth, async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!username) {
+      return res.status(400).json({ error: 'Username required' });
+    }
+    
+    const updateAdmin = db.prepare('UPDATE users SET is_admin = 1 WHERE username = ?');
+    const result = updateAdmin.run(username);
+    
+    if (result.changes > 0) {
+      res.json({ message: `User "${username}" is now an admin`, changes: result.changes });
+    } else {
+      res.status(404).json({ error: `User "${username}" not found` });
+    }
+  } catch (error) {
+    console.error('Error setting admin:', error);
+    res.status(500).json({ error: 'Failed to set admin status' });
+  }
 });
 
 // Serve admin.html for admin dashboard (allow access to HTML, but API endpoints are protected)
