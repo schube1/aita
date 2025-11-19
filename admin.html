@@ -374,18 +374,18 @@
 <body>
     <div class="admin-container">
         <div class="admin-header">
-            <h1>🔐 Admin Dashboard</h1>
+            <h1>Admin Dashboard</h1>
             <p style="color: var(--text-secondary); margin-top: 8px;">Manage users, view statistics, and monitor submissions</p>
             <div class="admin-nav">
-                <a href="#" class="nav-btn active" onclick="showView('stats')">📊 Statistics</a>
-                <a href="#" class="nav-btn" onclick="showView('users')">👥 Users</a>
-                <a href="#" class="nav-btn" onclick="showView('submissions')">📝 Submissions</a>
+                <a href="#" class="nav-btn active" onclick="showView('stats')">Statistics</a>
+                <a href="#" class="nav-btn" onclick="showView('users')">Users</a>
+                <a href="#" class="nav-btn" onclick="showView('submissions')">Submissions</a>
             </div>
         </div>
 
         <div id="errorContainer"></div>
         <div id="authPrompt" style="display: none; background: var(--bg-secondary); border-radius: 12px; padding: 32px; text-align: center; box-shadow: 0 4px 20px var(--shadow);">
-            <h2 style="margin-bottom: 16px;">🔐 Authentication Required</h2>
+            <h2 style="margin-bottom: 16px;">Authentication Required</h2>
             <p style="color: var(--text-secondary); margin-bottom: 24px;">You need to be logged in as an admin to access this dashboard.</p>
             <a href="/" style="display: inline-block; padding: 12px 24px; background: var(--accent-color); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Login Page</a>
         </div>
@@ -442,7 +442,7 @@
                 if (!adminCheck.ok) {
                     if (adminCheck.status === 403) {
                         document.getElementById('authPrompt').innerHTML = `
-                            <h2 style="margin-bottom: 16px;">🚫 Admin Access Required</h2>
+                            <h2 style="margin-bottom: 16px;">Admin Access Required</h2>
                             <p style="color: var(--text-secondary); margin-bottom: 24px;">You are logged in, but you don't have admin privileges.</p>
                             <a href="/" style="display: inline-block; padding: 12px 24px; background: var(--accent-color); color: white; border-radius: 8px; text-decoration: none; font-weight: 600;">Go Back</a>
                         `;
@@ -602,11 +602,6 @@
                 
                 if (data.users && data.users.length > 0) {
                     document.getElementById('usersContent').innerHTML = `
-                        <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-tertiary); border-radius: 8px; border-left: 4px solid var(--accent-color);">
-                            <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0;">
-                                <strong>Note:</strong> Passwords are securely hashed and cannot be viewed. This is a security best practice.
-                            </p>
-                        </div>
                         ${data.users.map(user => `
                         <div class="data-card">
                             <div class="data-card-header">
