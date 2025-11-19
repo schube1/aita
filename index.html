@@ -411,6 +411,64 @@
             color: white;
         }
 
+        /* Dark mode styles for submission cards */
+        body.dark-mode .submission-card {
+            background: #2c3e50;
+            border-color: #34495e;
+        }
+
+        body.dark-mode .submission-card-header {
+            background: #2c3e50;
+        }
+
+        body.dark-mode .submission-card-text {
+            color: #ecf0f1;
+        }
+
+        body.dark-mode .submission-header-left {
+            color: #ecf0f1;
+        }
+
+        body.dark-mode .submission-meta-info,
+        body.dark-mode .submission-date {
+            color: #bdc3c7;
+        }
+
+        body.dark-mode .submission-reasoning {
+            background: #34495e;
+            color: #ecf0f1;
+            border-top-color: #4a90e2;
+        }
+
+        body.dark-mode .reasoning-label {
+            color: #bdc3c7;
+        }
+
+        body.dark-mode .follow-up-context-display {
+            background: #3d2f1f;
+            border-top-color: #f39c12;
+            color: #ecf0f1;
+        }
+
+        body.dark-mode .rating-out-of {
+            color: #bdc3c7;
+        }
+
+        body.dark-mode .submission-footer {
+            background: #34495e;
+            border-top-color: #4a5568;
+            color: #ecf0f1;
+        }
+
+        body.dark-mode .view-header h1,
+        body.dark-mode .view-header p {
+            color: #ecf0f1;
+        }
+
+        body.dark-mode .empty-state {
+            color: #bdc3c7;
+        }
+
         .judgment-label {
             font-size: 0.9rem;
             opacity: 0.9;
@@ -1226,7 +1284,7 @@
                 </div>
             </div>
             <div id="submissionsContainer">
-                <div class="empty-state" style="background: white; padding: 40px; border-radius: 10px;">Loading submissions...</div>
+                <div class="empty-state" style="background: var(--bg-secondary); padding: 40px; border-radius: 10px;">Loading submissions...</div>
             </div>
         </div>
     </div>
@@ -1646,11 +1704,11 @@
                 
                 // Check if we're accessing via file:// protocol
                 if (window.location.protocol === 'file:') {
-                    submissionsContainer.innerHTML = '<div class="empty-state" style="background: white; padding: 40px; border-radius: 10px; color: #e74c3c;">⚠️ Please access this page through the server:<br><strong>http://localhost:3000</strong><br><small>Make sure the server is running with: npm start</small></div>';
+                    submissionsContainer.innerHTML = '<div class="empty-state" style="background: var(--bg-secondary); padding: 40px; border-radius: 10px; color: #e74c3c;">⚠️ Please access this page through the server:<br><strong>http://localhost:3000</strong><br><small>Make sure the server is running with: npm start</small></div>';
                     return;
                 }
                 
-                submissionsContainer.innerHTML = '<div class="empty-state" style="background: white; padding: 40px; border-radius: 10px;">Loading submissions...</div>';
+                submissionsContainer.innerHTML = '<div class="empty-state" style="background: var(--bg-secondary); padding: 40px; border-radius: 10px;">Loading submissions...</div>';
                 
                 const url = showMineOnly && currentUser 
                     ? '/api/submissions?limit=100&mine=true'
@@ -1749,7 +1807,7 @@
             } catch (error) {
                 console.error('Error loading submissions:', error);
                 if (submissionsContainer) {
-                    submissionsContainer.innerHTML = `<div class="empty-state" style="background: white; padding: 40px; border-radius: 10px; color: #e74c3c;">Error loading submissions: ${error.message}<br><small>Check console for details</small></div>`;
+                    submissionsContainer.innerHTML = `<div class="empty-state" style="background: var(--bg-secondary); padding: 40px; border-radius: 10px; color: #e74c3c;">Error loading submissions: ${error.message}<br><small>Check console for details</small></div>`;
                 }
             }
         }
