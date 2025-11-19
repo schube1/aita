@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Am I the Asshole?</title>
+    <link rel="icon" type="image/png" href="/snail.png">
     <style>
         * {
             margin: 0;
@@ -1619,7 +1620,10 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            console.log('Form submitted');
+            
             if (!currentUser) {
+                console.log('No current user');
                 showMessage('Please log in to submit.', true);
                 showAuthModal('login');
                 return;
@@ -1628,9 +1632,12 @@
             const situation = textarea.value.trim();
             
             if (!situation) {
+                console.log('No situation entered');
                 showMessage('Please enter a situation before submitting.', true);
                 return;
             }
+
+            console.log('Preparing submission...', { situation: situation.substring(0, 50) });
 
             // Disable form during submission
             submitBtn.disabled = true;
@@ -1638,8 +1645,10 @@
             form.classList.add('loading');
             messageArea.innerHTML = '';
 
-            const isPublic = isPublicCheckbox.checked;
-            const isAnonymous = isAnonymousCheckbox.checked && isPublic; // Only allow anonymous if public
+            const isPublic = isPublicCheckbox ? isPublicCheckbox.checked : true; // Default to public if checkbox not found
+            const isAnonymous = isAnonymousCheckbox ? (isAnonymousCheckbox.checked && isPublic) : false; // Only allow anonymous if public
+            
+            console.log('Submitting with options:', { isPublic, isAnonymous });
             
             try {
                 const response = await fetch('/api/submissions', {
@@ -1655,11 +1664,12 @@
                     })
                 });
 
-                const data = await response.json();
-
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to submit');
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `HTTP ${response.status}: Failed to submit`);
                 }
+
+                const data = await response.json();
 
                 // Show success
                 submissionText.textContent = situation;
