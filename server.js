@@ -58,14 +58,14 @@ async function analyzeSituation(situation, followUpContext = null) {
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a fair and honest judge for "Am I the Asshole?" scenarios. Your priority is accuracy and truthfulness. Be direct, clear, and thoughtful in your analysis. Consider all perspectives and context. Use engaging but respectful language. Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where 1 means definitely not the asshole and 10 means definitely the asshole. Format your response as: YTA/NTA [score]/10 - [your clear, honest reasoning]. Be fair, accurate, and helpful.'
+                  content: 'You are a fair and honest judge for "Am I the Asshole?" scenarios. Your priority is accuracy and truthfulness. Be direct, clear, and thoughtful in your analysis. Consider all perspectives and context. Use engaging but respectful language. Always determine if the person is the asshole (YTA) or not (NTA). Then provide a score from 1-10 where 1 means definitely not the asshole and 10 means definitely the asshole. Format your response as: YTA/NTA [score]/10 - [your clear, honest reasoning]. IMPORTANT: Keep your reasoning concise - between 40-90 words maximum. Be fair, accurate, and helpful.'
                 },
                 {
                   role: 'user',
-                  content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning. Be fair and accurate.`
+                  content: `Analyze this situation carefully and determine if they are the asshole: ${fullContext}\n\nConsider all perspectives and context. Respond with: YTA or NTA, then a score 1-10, then your clear, honest reasoning in 40-90 words. Be fair, accurate, and concise.`
                 }
               ],
-              max_tokens: 250,
+              max_tokens: 120,
               temperature: 0.7
       });
       
