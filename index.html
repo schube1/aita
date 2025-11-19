@@ -52,6 +52,8 @@
             display: flex;
             padding: 0;
             margin: 0;
+            width: 100%;
+            overflow-x: hidden;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
@@ -108,10 +110,11 @@
         .main-content {
             flex: 1;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             padding: 20px;
             margin-left: 80px;
+            min-height: 100vh;
         }
 
         .container {
@@ -132,7 +135,7 @@
             padding: 40px;
             margin-left: 80px;
             overflow-y: auto;
-            max-height: 100vh;
+            min-height: 100vh;
         }
 
         .submissions-view.active {
@@ -893,40 +896,6 @@
 
         @media (max-width: 768px) {
             .sidebar {
-                width: 60px;
-            }
-
-            .sidebar-item {
-                width: 40px;
-                height: 40px;
-                font-size: 1.2rem;
-            }
-
-            .main-content,
-            .submissions-view {
-                margin-left: 60px;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .container {
-                padding: 25px;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-        }
-
-        @media (max-width: 480px) {
-            /* Mobile portrait orientation improvements */
-            body {
-                overflow-x: hidden;
-            }
-
-            .sidebar {
                 width: 100%;
                 height: auto;
                 position: fixed;
@@ -946,9 +915,8 @@
             .sidebar-item {
                 width: 44px;
                 height: 44px;
+                font-size: 1.1rem;
                 margin: 0;
-                border-radius: 10px;
-                flex-shrink: 0;
             }
 
             .main-content,
@@ -960,18 +928,93 @@
                 max-width: 100%;
             }
 
+            h1 {
+                font-size: 1.75rem;
+            }
+
             .container {
-                padding: 16px;
+                padding: 20px;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Mobile portrait - everything visible and actionable */
+            html, body {
+                overflow-x: hidden;
+                width: 100%;
+                height: 100%;
+            }
+
+            body {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 10px 8px;
+                z-index: 1000;
+                border-top: 2px solid var(--border-color);
+                border-right: none;
+                background: var(--bg-secondary);
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            }
+
+            .sidebar-item {
+                width: 48px;
+                height: 48px;
+                margin: 0;
+                border-radius: 12px;
+                flex-shrink: 0;
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                margin-bottom: 75px;
+                padding: 12px;
+                width: 100%;
+                max-width: 100%;
+                min-height: calc(100vh - 75px);
+                align-items: flex-start;
+                justify-content: flex-start;
+            }
+
+            .submissions-view {
+                margin-left: 0 !important;
+                margin-bottom: 75px;
+                padding: 12px;
+                width: 100%;
+                max-width: 100%;
+                min-height: calc(100vh - 75px);
+            }
+
+            .container {
+                padding: 20px 16px;
                 border-radius: 12px;
                 width: 100%;
                 max-width: 100%;
                 box-sizing: border-box;
+                margin: 0;
             }
 
             h1 {
-                font-size: 1.5rem;
-                margin-bottom: 16px;
+                font-size: 1.6rem;
+                margin-bottom: 12px;
                 line-height: 1.3;
+                word-wrap: break-word;
             }
 
             .view-header {
@@ -979,81 +1022,87 @@
             }
 
             .view-header h1 {
-                font-size: 1.4rem;
+                font-size: 1.5rem;
                 margin-bottom: 8px;
             }
 
             .view-header p {
-                font-size: 0.85rem;
+                font-size: 0.9rem;
                 margin-bottom: 12px;
             }
 
             .view-header > div {
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
                 width: 100%;
             }
 
             .view-header button {
                 width: 100%;
-                padding: 12px;
-                font-size: 0.9rem;
+                padding: 14px;
+                font-size: 0.95rem;
+                border-radius: 10px;
             }
 
             textarea {
                 font-size: 16px; /* Prevents zoom on iOS */
-                padding: 12px;
-                min-height: 150px;
+                padding: 14px;
+                min-height: 180px;
                 width: 100%;
                 box-sizing: border-box;
+                border-radius: 10px;
             }
 
             .submit-btn, .clear-btn {
                 width: 100%;
-                padding: 14px;
+                padding: 16px;
                 font-size: 1rem;
-                margin-top: 8px;
+                margin-top: 10px;
+                border-radius: 10px;
             }
 
             .button-group {
                 flex-direction: column;
-                gap: 10px;
+                gap: 12px;
                 width: 100%;
+                margin-top: 20px;
             }
 
             .user-info {
                 position: fixed;
-                top: 10px;
-                right: 10px;
+                top: 12px;
+                right: 12px;
                 left: auto;
-                padding: 6px 10px;
-                font-size: 0.8rem;
+                padding: 8px 12px;
+                font-size: 0.85rem;
                 flex-direction: row;
-                gap: 6px;
-                max-width: calc(100% - 20px);
+                gap: 8px;
+                max-width: calc(100% - 24px);
                 z-index: 999;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
             }
 
             .user-info span {
-                display: none; /* Hide username text on very small screens */
+                display: inline; /* Show username on mobile */
             }
 
             .user-info .logout-btn {
-                padding: 4px 8px;
-                font-size: 0.75rem;
+                padding: 6px 10px;
+                font-size: 0.8rem;
             }
 
             .submission-card {
-                margin-bottom: 12px;
-                border-radius: 8px;
+                margin-bottom: 16px;
+                border-radius: 10px;
                 width: 100%;
                 box-sizing: border-box;
             }
 
             .submission-card-header {
-                padding: 10px 12px;
+                padding: 14px;
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
                 align-items: flex-start;
             }
 
@@ -1061,139 +1110,168 @@
                 width: 100%;
             }
 
+            .submission-header-left > div:first-child {
+                font-size: 0.75rem;
+            }
+
+            .submission-header-left > div:nth-child(2) {
+                font-size: 1rem;
+                margin-top: 4px;
+            }
+
             .rating-badge-large {
                 width: 100%;
                 align-items: flex-start;
-                margin-top: 4px;
+                margin-top: 8px;
                 flex-direction: row;
-                justify-content: space-between;
+                justify-content: flex-start;
+                gap: 12px;
             }
 
             .rating-number {
-                font-size: 1.6rem;
+                font-size: 1.8rem;
             }
 
             .rating-verdict {
-                font-size: 0.7rem;
+                font-size: 0.75rem;
             }
 
             .rating-out-of {
-                font-size: 0.6rem;
+                font-size: 0.65rem;
             }
 
             .submission-card-body {
-                padding: 10px 12px;
+                padding: 14px;
             }
 
             .submission-card-text {
-                font-size: 0.9rem;
-                line-height: 1.6;
-                max-height: none; /* Remove height limit on mobile */
+                font-size: 0.95rem;
+                line-height: 1.7;
+                max-height: none;
                 -webkit-line-clamp: unset;
                 line-clamp: unset;
                 display: block;
+                word-wrap: break-word;
             }
 
             .submission-footer {
-                padding: 8px 12px;
+                padding: 12px 14px;
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
                 align-items: flex-start;
             }
 
             .score-visual {
                 width: 100%;
-                flex-wrap: wrap;
+                flex-direction: column;
+                gap: 8px;
             }
 
             .score-meter-label {
                 min-width: auto;
                 width: 100%;
-                margin-bottom: 4px;
+                font-size: 0.8rem;
             }
 
             .score-dots {
                 flex-wrap: wrap;
                 width: 100%;
+                gap: 4px;
+            }
+
+            .score-dot {
+                width: 10px;
+                height: 10px;
             }
 
             .auth-container {
-                padding: 20px 16px;
-                max-width: 95%;
+                padding: 24px 20px;
+                max-width: calc(100% - 40px);
                 margin: 20px auto;
-                width: calc(100% - 40px);
+                width: auto;
             }
 
             .auth-tabs {
-                gap: 6px;
+                gap: 8px;
             }
 
             .auth-tab {
-                padding: 10px 8px;
-                font-size: 0.85rem;
+                padding: 12px;
+                font-size: 0.9rem;
             }
 
             .form-group {
-                margin-bottom: 14px;
+                margin-bottom: 16px;
             }
 
             .form-group label {
-                font-size: 0.9rem;
-                margin-bottom: 6px;
+                font-size: 0.95rem;
+                margin-bottom: 8px;
             }
 
             .form-group input {
-                padding: 12px;
+                padding: 14px;
                 font-size: 16px; /* Prevents zoom on iOS */
                 width: 100%;
                 box-sizing: border-box;
             }
 
+            /* Form options styling */
+            #isPublic, #isAnonymous {
+                width: 20px;
+                height: 20px;
+                margin-right: 8px;
+            }
+
+            #anonymousOption {
+                margin-top: 12px;
+            }
+
             .submission-reasoning {
-                padding: 12px;
-                font-size: 0.85rem;
-                margin-top: 10px;
+                padding: 14px;
+                font-size: 0.9rem;
+                margin-top: 12px;
             }
 
             .reasoning-label {
-                font-size: 0.65rem;
+                font-size: 0.7rem;
             }
 
             .follow-up-context-display {
-                padding: 12px;
-                margin-top: 10px;
+                padding: 14px;
+                margin-top: 12px;
             }
 
             .follow-up-context-label {
-                font-size: 0.65rem;
+                font-size: 0.7rem;
             }
 
             .judgment-section {
-                padding: 16px;
+                padding: 20px;
             }
 
             .judgment-verdict {
-                font-size: 1.75rem;
+                font-size: 2rem;
             }
 
             .judgment-score {
                 flex-direction: column;
-                gap: 6px;
-                margin-top: 12px;
+                gap: 8px;
+                margin-top: 16px;
             }
 
             .score-value {
-                font-size: 2rem;
+                font-size: 2.5rem;
             }
 
             .score-label {
-                font-size: 0.85rem;
+                font-size: 0.9rem;
             }
 
             .judgment-reasoning {
-                font-size: 0.9rem;
-                padding: 14px;
-                margin-top: 12px;
+                font-size: 0.95rem;
+                padding: 16px;
+                margin-top: 16px;
             }
 
             .submission-area {
@@ -1201,28 +1279,35 @@
             }
 
             .submission-title {
-                font-size: 0.9rem;
+                font-size: 0.95rem;
             }
 
             .submission-text {
-                font-size: 0.9rem;
-                padding: 12px;
-            }
-
-            /* Checkbox and form options */
-            #isPublic, #isAnonymous {
-                width: 20px;
-                height: 20px;
+                font-size: 0.95rem;
+                padding: 14px;
             }
 
             /* Ensure no horizontal overflow */
             * {
                 max-width: 100%;
+                box-sizing: border-box;
             }
 
             img {
                 max-width: 100%;
                 height: auto;
+            }
+
+            /* Login prompt */
+            .login-prompt {
+                padding: 20px;
+                text-align: center;
+            }
+
+            .login-prompt button {
+                width: 100%;
+                padding: 14px;
+                margin-top: 12px;
             }
         }
     </style>
